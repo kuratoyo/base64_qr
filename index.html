@@ -17,12 +17,34 @@
     <h1>QRコード読み取りシステム</h1>
     <div id="qr-result"></div>
     <video id="preview"></video>
+    <button id="toggle-camera">切り替え</button>
 
     <script>
         $(document).ready(function () {
             const qrResult = $("#qr-result");
-            const scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
-            let data = ""
+            const video = document.getElementById('preview');
+            const scanner = new Instascan.Scanner({ video: video });
+            let data = "";
+
+            let currentCamera = 0; // 0 represents the first camera
+
+            $("#toggle-camera").on('click', function () {
+                currentCamera = (currentCamera + 1) % Instascan.Camera.getCameras().length;
+                startScanner();
+            });
+
+            function startScanner() {
+                Instascan.Camera.getCameras().then(function (cameras) {
+                    if (cameras.length > 0) {
+                        scanner.start(cameras[currentCamera]);
+                    } else {
+                        console.error('No cameras found.');
+                    }
+                }).catch(function (e) {
+                    console.error(e);
+                });
+            }
+
             scanner.addListener('scan', function (content) {
                 qrResult.html(qrResult.html() + content.split(",")[1] + '<br>');
                 data += content.split(",")[1]
@@ -32,15 +54,7 @@
                 }
             });
 
-            Instascan.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function (e) {
-                console.error(e);
-            });
+            startScanner();
         });
     </script>
 </body>
