@@ -5,56 +5,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QRコード読み取りシステム</title>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/qr_packed.js"></script>
-    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/RSDecoder.js"></script>
-    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/BitMatrix.js"></script>
-    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/QRCode.js"></script>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
 </head>
 
 <body>
     <h1>QRコード読み取りシステム</h1>
     <div id="qr-result"></div>
-    <video id="preview"></video>
-    <button id="toggle-camera">切り替え</button>
+    <video id="preview" width="700" height="600" autoplay></video>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://cdn.rawgit.com/cozmo/jsQR/master/dist/jsQR.js"></script>
 
     <script>
-        $(document).ready(function () {
-            const qrResult = $("#qr-result");
-            const video = document.getElementById('preview');
-            const scanner = new Instascan.Scanner({ video: video });
-            let data = "";
+        document.addEventListener("DOMContentLoaded", function () {
+            const qrResult = document.getElementById("qr-result");
+            const video = document.getElementById("preview");
 
-            let currentCamera = 0; // 0 represents the first camera
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
 
-            $("#toggle-camera").on('click', function () {
-                currentCamera = (currentCamera + 1) % Instascan.Camera.getCameras().length;
-                startScanner();
-            });
+                    const canvas = document.createElement("canvas");
+                    const canvasContext = canvas.getContext("2d");
+                    const qrcode = new QRCode(document.getElementById("qr-result"));
 
-            function startScanner() {
-                Instascan.Camera.getCameras().then(function (cameras) {
-                    if (cameras.length > 0) {
-                        scanner.start(cameras[currentCamera]);
-                    } else {
-                        console.error('No cameras found.');
-                    }
-                }).catch(function (e) {
-                    console.error(e);
+                    video.addEventListener("loadedmetadata", function () {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                    });
+                    let data = ""
+                    video.addEventListener("play", function () {
+                        function scan() {
+                            canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                            if (code) {
+                                qrResult.innerHTML = "QRコード内容: " + code.data;
+                                data += code.data.split(",")[1]
+                                if (code.data.split(",")[0] == "end") {
+                                    qrResult.innerHTML = `<video src="data:video/mp4;base64,${data}" controls>`;
+                                }
+                            }
+
+                            requestAnimationFrame(scan);
+                        }
+
+                        requestAnimationFrame(scan);
+                    });
+                })
+                .catch(function (error) {
+                    console.error("Error accessing camera:", error);
                 });
-            }
-
-            scanner.addListener('scan', function (content) {
-                qrResult.html(qrResult.html() + content.split(",")[1] + '<br>');
-                data += content.split(",")[1]
-                qrResult.html(qrResult.html() + content.split(",")[0] + '<br>');
-                if (content.split(",")[0] == "end") {
-                    qrResult.html(qrResult.html() + `<video src="data:video/mp4;base64,${data}">` + '<br>');
-                }
-            });
-
-            startScanner();
         });
     </script>
 </body>
