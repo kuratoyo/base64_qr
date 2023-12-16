@@ -10,7 +10,8 @@
 <body>
     <h1>QRコード読み取りシステム</h1>
     <div id="qr-result"></div>
-    <video id="preview" width="700" height="600" autoplay></video>
+    <video id="preview" width="300" height="200" autoplay></video>
+    <button onclick="toggleCamera()">Toggle Camera</button>
 
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
     <script src="https://cdn.rawgit.com/cozmo/jsQR/master/dist/jsQR.js"></script>
@@ -19,9 +20,24 @@
         document.addEventListener("DOMContentLoaded", function () {
             const qrResult = document.getElementById("qr-result");
             const video = document.getElementById("preview");
+            let currentCamera = 0; // 0 represents the rear camera, 1 represents the front camera
 
-            navigator.mediaDevices.getUserMedia({ video: true, facingMode: { exact: "environment" } })
-                .then(function (stream) {
+            function toggleCamera() {
+                currentCamera = 1 - currentCamera; // Toggle between 0 and 1
+                initializeCamera();
+            }
+
+            function initializeCamera() {
+                navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: currentCamera === 0 ? "environment" : "user"
+                    }
+                }).then(function (stream) {
+                    if (video.srcObject) {
+                        const tracks = video.srcObject.getTracks();
+                        tracks.forEach(track => track.stop());
+                    }
+
                     video.srcObject = stream;
 
                     const canvas = document.createElement("canvas");
@@ -32,7 +48,7 @@
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
                     });
-                    let data = ""
+
                     video.addEventListener("play", function () {
                         function scan() {
                             canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -52,10 +68,13 @@
 
                         requestAnimationFrame(scan);
                     });
-                })
-                .catch(function (error) {
+                }).catch(function (error) {
                     console.error("Error accessing camera:", error);
                 });
+            }
+
+            // Initialize with the default camera
+            initializeCamera();
         });
     </script>
 </body>
