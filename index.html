@@ -48,7 +48,7 @@
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
                     });
-
+                    let data = ""
                     video.addEventListener("play", function () {
                         function scan() {
                             canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
