@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコード読み取りシステム</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/qr_packed.js"></script>
+    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/RSDecoder.js"></script>
+    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/BitMatrix.js"></script>
+    <script src="https://rawgit.com/sitepoint-editors/jsqrcode/master/src/QRCode.js"></script>
+    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+</head>
+
+<body>
+    <h1>QRコード読み取りシステム</h1>
+    <div id="qr-result"></div>
+    <video id="preview"></video>
+
+    <script>
+        $(document).ready(function () {
+            const qrResult = $("#qr-result");
+            const scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+            let data = ""
+            scanner.addListener('scan', function (content) {
+                qrResult.html(qrResult.html() + content.split(",")[1] + '<br>');
+                data += content.split(",")[1]
+                qrResult.html(qrResult.html() + content.split(",")[0] + '<br>');
+                if (content.split(",")[0] == "end") {
+                    qrResult.html(qrResult.html() + `<video src="data:video/mp4;base64,${data}">` + '<br>');
+                }
+            });
+
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    scanner.start(cameras[0]);
+                } else {
+                    console.error('No cameras found.');
+                }
+            }).catch(function (e) {
+                console.error(e);
+            });
+        });
+    </script>
+</body>
+
+</html>
